@@ -1,0 +1,18 @@
+/node_modules
+
+# Транспилированный код (npm run tsc собирает .js/.d.ts рядом с .ts)
+# Исходники — .ts в тех же папках; app.js, bin/www, routes/index.js, routes/users.js — живые источники
+controllers/*.js
+controllers/*.map
+controllers/*.d.ts
+models/*.js
+models/*.map
+models/*.d.ts
+routes/entries.js
+routes/entries.js.map
+routes/entries.d.ts
+routes/entries.d.ts.map
+routes/stats.js
+routes/stats.js.map
+routes/stats.d.ts
+routes/stats.d.ts.map
