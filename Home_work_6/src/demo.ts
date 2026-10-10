@@ -1,5 +1,5 @@
-import { ApiClient } from "./apiClient.js";
-import { usersEndpoints, type IUser } from "./users.js";
+import { ApiClient, type EndpointResponse } from "./apiClient.js";
+import { usersEndpoints } from "./users.js";
 import { ApiHttpError, ApiValidationError } from "./errors.js";
 
 const client = new ApiClient({
@@ -7,7 +7,7 @@ const client = new ApiClient({
   headers: { "X-Client": "hw6-demo" },
 });
 
-const users: IUser[] = await client.get(usersEndpoints.list.path, usersEndpoints.list, {
+const users = await client.get(usersEndpoints.list.path, usersEndpoints.list, {
   _limit: 2,
 });
 console.log("1. OK:", users.map((u) => u.name).join(", "));
@@ -39,5 +39,8 @@ try {
   }
 }
 
-const check = users;
-console.log("5. EndpointResponse<typeof usersEndpoints.list> is array:", Array.isArray(check));
+const check: EndpointResponse<typeof usersEndpoints.list> = users;
+console.log(
+  "5. EndpointResponse<typeof usersEndpoints.list>:",
+  check.map((u) => u.name).join(", "),
+);

@@ -9,13 +9,23 @@ export interface ApiClientOptions {
 export class ApiClient {
   constructor(private options: ApiClientOptions) { }
 
-  async get(
+  async get<S extends EndpointSchemas>(
     path: string,
-    schemas: EndpointSchemas,
+    schemas: S,
     query?: Record<string, unknown>,
     headers?: Record<string, string>,
-  ) {
+  ): Promise<EndpointResponse<S>> {
     const url = new URL(path, this.options.baseURL);
+
+    let queryToSerialize = query ?? {};
+    if (schemas.querySchema) {
+      const parsedQuery = schemas.querySchema.safeParse(queryToSerialize);
+      if (!parsedQuery.success) throw new ApiValidationError(url.href, parsedQuery.error);
+      queryToSerialize = parsedQuery.data;
+    }
+    for (const [key, value] of Object.entries(queryToSerialize)) {
+      url.searchParams.set(key, String(value));
+    }
 
     const response = await fetch(url.href, {
       method: "GET",
@@ -23,11 +33,12 @@ export class ApiClient {
     });
 
     if (response.status >= 400) {
+      const text = await response.text();
       let details: unknown;
       try {
-        details = await response.json();
+        details = JSON.parse(text);
       } catch {
-        details = await response.text();
+        details = text;
       }
       throw new ApiHttpError(url.href, response.status, details);
     }
@@ -44,3 +55,5 @@ export interface EndpointSchemas {
   bodySchema?: z.ZodTypeAny;
   responseSchema: z.ZodTypeAny;
 }
+
+export type EndpointResponse<S extends EndpointSchemas> = z.infer<S["responseSchema"]>;
