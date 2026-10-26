@@ -1,6 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import {
+    ForbiddenException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { hash } from 'bcryptjs';
 import { User } from '../db/Entities/User.entity.js';
 import { EUserRole } from '../constants.js';
 import { CreateUserDto, UpdateUserDto } from '../dto/user.dto.js';
@@ -14,27 +19,43 @@ export class UserService {
     ) { }
 
     getAll() {
-        return this.usersRepository.find();
+        return this.usersRepository.find().then((users) => users.map((u) => u.toPublic()));
     }
 
     async createUser(data: CreateUserDto) {
-        await this.usersRepository.save(data);
+        const passwordHash = data.password
+            ? await hash(data.password, 10)
+            : '';
+
+        const user = this.usersRepository.create({ ...data, passwordHash });
+        const saved = await this.usersRepository.save(user);
+        return saved.toPublic();
     }
 
     async deleteUser(id: number) {
         await this.usersRepository.delete({ id });
     }
 
-    async updateUser(id: number, data: UpdateUserDto) {
-        const existing = await this.usersRepository.findOne({
-            where: { id },
-        });
+    async updateUser(id: number, currentUser: User, data: UpdateUserDto) {
+        const existing = await this.usersRepository.findOne({ where: { id } });
 
         if (!existing) {
-            throw new Error(`User id=${id} notFound`);
+            throw new NotFoundException(`User id=${id} not found`);
         }
 
-        await this.usersRepository.update(id, { ...existing, ...data });
+        if (currentUser.id === id) {
+            const updates: Partial<Pick<User, 'name' | 'email'>> = {};
+            if (data.name) updates.name = data.name;
+            if (data.email) updates.email = data.email;
+            await this.usersRepository.update(id, updates);
+            return;
+        }
+
+        if (currentUser.role !== EUserRole.Admin) {
+            throw new ForbiddenException('Insufficient permissions');
+        }
+
+        await this.usersRepository.update(id, data);
     }
 
     async updateUserStatusAndRole(
@@ -47,7 +68,7 @@ export class UserService {
         });
 
         if (!current || current.role !== EUserRole.Admin) {
-            throw new Error(`User id=${currentUserId} is not admin`);
+            throw new ForbiddenException('Insufficient permissions');
         }
 
         const existing = await this.usersRepository.findOne({
@@ -55,7 +76,7 @@ export class UserService {
         });
 
         if (!existing) {
-            throw new Error(`User id=${id} notFound`);
+            throw new NotFoundException(`User id=${id} not found`);
         }
 
         await this.usersRepository.update(id, updates);

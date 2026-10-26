@@ -6,10 +6,13 @@ import {
     Param,
     Post,
     Put,
+    UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CommentService } from '../services/comment.service.js';
-import { Comment } from '../db/Entities/Comment.entity.js';
+import { User } from '../db/Entities/User.entity.js';
+import { AuthGuard } from '../guards/auth.guard.js';
+import { CurrentUser } from '../decorators/current-user.decorator.js';
 import {
     CreateCommentDto,
     UpdateCommentDto,
@@ -23,42 +26,50 @@ export class CommentsController {
 
     @ApiOperation({ summary: 'Список видимых комментариев' })
     @Get()
-    getPublic(): Promise<Comment[]> {
+    getPublic() {
         return this.commentsService.getPublic();
     }
 
-    @ApiOperation({ summary: 'Добавление комментария к задаче' })
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Добавление комментария к задаче (любой авторизованный)' })
     @Post()
+    @UseGuards(AuthGuard)
     async createComment(
         @Body() data: CreateCommentDto,
-        currentUserId: number,
+        @CurrentUser() currentUser: User,
     ) {
-        await this.commentsService.createComment(currentUserId, data.taskId, data.content)
+        return this.commentsService.createComment(currentUser.id, data.taskId, data.content);
     }
 
+    @ApiBearerAuth()
     @ApiOperation({ summary: 'Обновление собственного комментария' })
     @Put(':id')
+    @UseGuards(AuthGuard)
     async updateComment(
         @Param('id') id: number,
-        currentUserId: number,
+        @CurrentUser() currentUser: User,
         @Body() data: UpdateCommentDto,
     ) {
-        await this.commentsService.updateComment(id, currentUserId, data.content)
+        await this.commentsService.updateComment(id, currentUser.id, data.content);
     }
 
+    @ApiBearerAuth()
     @ApiOperation({ summary: 'Удаление собственного комментария' })
     @Delete(':id')
-    async deleteComment(@Param('id') id: number, currentUserId: number) {
-        await this.commentsService.deleteComment(id, currentUserId)
+    @UseGuards(AuthGuard)
+    async deleteComment(@Param('id') id: number, @CurrentUser() currentUser: User) {
+        await this.commentsService.deleteComment(id, currentUser.id);
     }
 
+    @ApiBearerAuth()
     @ApiOperation({ summary: 'Скрытие/показ комментария (автор задачи или admin)' })
     @Put(':id/status')
+    @UseGuards(AuthGuard)
     async updateCommentStatus(
         @Param('id') id: number,
-        currentUserId: number,
+        @CurrentUser() currentUser: User,
         @Body() data: UpdateCommentStatusDto,
     ) {
-        await this.commentsService.updateCommentStatus(id, currentUserId, data.status)
+        await this.commentsService.updateCommentStatus(id, currentUser.id, data.status);
     }
 }
