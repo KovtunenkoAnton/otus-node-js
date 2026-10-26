@@ -11,10 +11,12 @@ import { CommentsController } from './controllers/comments.controller.js';
 import { TagsController } from './controllers/tags.controller.js';
 import { TasksController } from './controllers/tasks.controller.js';
 import { UsersController } from './controllers/users.controller.js';
+import { AuthController } from './controllers/auth.controller.js';
 import { UserService } from './services/user.service.js';
 import { TaskService } from './services/task.service.js';
 import { TagService } from './services/tag.service.js';
 import { CommentService } from './services/comment.service.js';
+import { AuthService } from './services/auth.service.js';
 
 
 @Module({
@@ -22,7 +24,7 @@ import { CommentService } from './services/comment.service.js';
     TypeOrmModule.forRoot(connection),
     TypeOrmModule.forFeature([Comment, Tag, Task, User]),
   ],
-  controllers: [CommentsController, TagsController, TasksController, UsersController],
-  providers: [AppService, providers, UserService, TaskService, TagService, CommentService],
+  controllers: [CommentsController, TagsController, TasksController, UsersController, AuthController],
+  providers: [AppService, providers, UserService, TaskService, TagService, CommentService, AuthService],
 })
 export class AppModule {}

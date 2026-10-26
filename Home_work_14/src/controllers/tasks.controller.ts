@@ -7,10 +7,16 @@ import {
     Post,
     Put,
     Query,
+    UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { TaskService } from '../services/task.service.js';
-import { Task } from '../db/Entities/Task.entity.js';
+import { User } from '../db/Entities/User.entity.js';
+import { EUserRole } from '../constants.js';
+import { AuthGuard } from '../guards/auth.guard.js';
+import { RolesGuard } from '../guards/roles.guard.js';
+import { Roles } from '../decorators/roles.decorator.js';
+import { CurrentUser } from '../decorators/current-user.decorator.js';
 import {
     CreateTaskDto,
     TaskListQueryDto,
@@ -18,40 +24,41 @@ import {
 } from '../dto/task.dto.js';
 
 @ApiTags('tasks')
+@ApiBearerAuth()
 @Controller('/tasks')
+@UseGuards(AuthGuard, RolesGuard)
 export class TasksController {
     constructor(private readonly tasksService: TaskService) { }
 
-    @ApiOperation({ summary: 'Список задач с фильтрами и пагинацией' })
+    @ApiOperation({ summary: 'Список задач с фильтрами и пагинацией (любой авторизованный)' })
     @Get()
-    getAll(
-        @Query() query: TaskListQueryDto,
-    ): Promise<{ items: Task[]; total: number; page: number; limit: number }> {
+    getAll(@Query() query: TaskListQueryDto) {
         return this.tasksService.getAll(query);
     }
 
-    @ApiOperation({ summary: 'Создание задачи' })
+    @ApiOperation({ summary: 'Создание задачи (author или admin)' })
     @Post()
+    @Roles(EUserRole.Author, EUserRole.Admin)
     async createTask(
         @Body() data: CreateTaskDto,
-        currentUserId: number,
+        @CurrentUser() currentUser: User,
     ) {
-        await this.tasksService.createTask(currentUserId, data)
+        return this.tasksService.createTask(currentUser.id, data);
     }
 
     @ApiOperation({ summary: 'Обновление задачи (автор задачи или admin)' })
     @Put(':id')
     async updateTask(
         @Param('id') id: number,
-        currentUserId: number,
+        @CurrentUser() currentUser: User,
         @Body() data: UpdateTaskDto,
     ) {
-        await this.tasksService.updateTask(id, currentUserId, data)
+        await this.tasksService.updateTask(id, currentUser.id, data);
     }
 
     @ApiOperation({ summary: 'Удаление задачи (автор задачи или admin)' })
     @Delete(':id')
-    async deleteTask(@Param('id') id: number, currentUserId: number) {
-        await this.tasksService.deleteTask(id, currentUserId)
+    async deleteTask(@Param('id') id: number, @CurrentUser() currentUser: User) {
+        await this.tasksService.deleteTask(id, currentUser.id);
     }
 }
