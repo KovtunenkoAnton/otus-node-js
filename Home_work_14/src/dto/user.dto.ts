@@ -5,6 +5,8 @@ import {
     IsNotEmpty,
     IsOptional,
     IsString,
+    MaxLength,
+    MinLength,
 } from 'class-validator';
 import { EUserStatus, EUserRole } from '../constants.js';
 
@@ -25,6 +27,13 @@ export class CreateUserDto {
     @ApiProperty({ enum: EUserStatus, description: 'Статус' })
     @IsEnum(EUserStatus)
     status: EUserStatus;
+
+    @ApiPropertyOptional({ description: 'Пароль (опционально)', minLength: 6, maxLength: 72 })
+    @IsOptional()
+    @IsString()
+    @MinLength(6)
+    @MaxLength(72)
+    password?: string;
 }
 
 export class UpdateUserDto {
