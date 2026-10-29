@@ -98,7 +98,7 @@ npm run start:prod     # production (сначала npm run build)
 
 | Действие                                   | user        | author      | admin |
 | ------------------------------------------ | ----------- | ----------- | ----- |
-| `GET /tasks`, `GET /comments`, `GET /tags` | ✔ (auth)    | ✔ (auth)    | ✔ (auth) |
+| `GET /tasks`, `GET /tasks/:id`, `GET /comments`, `GET /tags` | ✔ (auth) | ✔ (auth)    | ✔ (auth) |
 | `POST /tasks`                              | —           | ✔           | ✔     |
 | `PUT/DELETE /tasks/:id`                    | —           | свои задачи | любые |
 | `POST /comments`                           | ✔           | ✔           | ✔     |
@@ -122,8 +122,9 @@ Swagger: `http://localhost:3000/api/docs` (публичные секции: auth
 ### Tasks (`/tasks`) — только авторизованные
 
 - `GET /tasks` — список задач (любая роль). Фильтры: `?tag=`, `?status=`, `?author=`, `?q=`. Пагинация: `?page=&limit=`. Ответ: `{ items, total, page, limit }`.
+- `GET /tasks/:id` — одна задача (любая роль); `404`, если не существует.
 - `POST /tasks` — создание (author, admin).
-- `PUT /tasks/:id` — обновление (автор задачи или admin).
+- `PUT /tasks/:id` — обновление полей (автор задачи или admin).
 - `DELETE /tasks/:id` — удаление (автор задачи или admin).
 
 ### Tags (`/tags`)
@@ -161,11 +162,34 @@ Swagger: `http://localhost:3000/api/docs` (публичные секции: auth
 - `409` — email уже занят;
 - `500` — внутренняя ошибка сервера.
 
+## e2e-тесты
+
+CRUD-тесты (`test/app.e2e-spec.ts`, Nest Testing Module + Supertest) работают против **локального PostgreSQL** — того же, что и приложение (хост/порт/логин/пароль берутся из `.env`):
+
+- отдельная база `home_work_14_e2e` создаётся автоматически перед запуском (имя БД переопределяется в `test/e2e-env.ts`, дев-база `home_work_14` не затрагивается);
+- таблицы создаются через `synchronize: true`;
+- данные очищаются перед каждым кейсом (`TRUNCATE ... CASCADE`).
+
+Если Postgres ещё не поднят, включите любой локальный вариант, например Docker:
+
+```bash
+docker run -d --name hw14-pg -e POSTGRES_PASSWORD=1234567 -p 5432:5432 postgres:16
+```
+
+Либо используйте уже запущенный Postgres (как при обычном запуске приложения — см. раздел «Запуск»).
+
+Запуск:
+
+```bash
+npm run test:e2e
+```
+
 ## Полезные команды
 
 ```bash
 npm run lint       # линтинг (oxlint)
 npm run test       # unit-тесты (vitest)
+npm run test:e2e   # e2e-тесты (vitest + Supertest, нужен локальный Postgres)
 npm run test:cov   # тесты с покрытием
 npm run format     # форматирование (prettier)
 ```

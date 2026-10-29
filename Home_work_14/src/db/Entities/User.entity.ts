@@ -21,10 +21,10 @@ export class User {
     @Column({ length: 1024 })
     passwordHash: string;
 
-    @Column()
+    @Column({ type: 'varchar' })
     role: EUserRole;
 
-    @Column()
+    @Column({ type: 'varchar' })
     status: EUserStatus;
 
     /** Копия пользователя без хэша пароля — безопасно отдавать в ответах API */

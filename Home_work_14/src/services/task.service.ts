@@ -70,6 +70,19 @@ export class TaskService {
         };
     }
 
+    async findOne(id: number) {
+        const task = await this.tasksRepository.findOne({
+            where: { id },
+            relations: { tags: true, author: true },
+        });
+
+        if (!task) {
+            throw new NotFoundException(`Task id=${id} not found`);
+        }
+
+        return { ...task, author: task.author?.toPublic() };
+    }
+
     async createTask(
         currentUserId: number,
         data: { title: string; content: string; status: ETaskStatus; tags?: number[] },

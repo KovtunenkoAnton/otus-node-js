@@ -36,6 +36,12 @@ export class TasksController {
         return this.tasksService.getAll(query);
     }
 
+    @ApiOperation({ summary: 'Одна задача по id (любой авторизованный)' })
+    @Get(':id')
+    async getTask(@Param('id') id: number) {
+        return this.tasksService.findOne(id);
+    }
+
     @ApiOperation({ summary: 'Создание задачи (author или admin)' })
     @Post()
     @Roles(EUserRole.Author, EUserRole.Admin)

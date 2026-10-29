@@ -21,7 +21,7 @@ export class Task {
     @Column({ type: 'text' })
     content: string;
 
-    @Column()
+    @Column({ type: 'varchar' })
     status: ETaskStatus;
 
     @ManyToOne(() => User)
