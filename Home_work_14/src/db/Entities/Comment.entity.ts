@@ -16,7 +16,7 @@ export class Comment {
     @Column({ type: 'text' })
     content: string;
 
-    @Column()
+    @Column({ type: 'varchar' })
     status: ECommentStatus;
 
     @ManyToOne(() => User)

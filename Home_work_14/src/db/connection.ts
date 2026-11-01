@@ -1,8 +1,8 @@
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import { DataSourceOptions } from 'typeorm';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { Comment } from './Entities/Comment.entity.js';
+import { Tag } from './Entities/Tag.entity.js';
+import { Task } from './Entities/Task.entity.js';
+import { User } from './Entities/User.entity.js';
 
 export const connection: DataSourceOptions = {
   type: 'postgres',
@@ -11,6 +11,6 @@ export const connection: DataSourceOptions = {
   username: process.env.DB_USER ?? 'postgres',
   password: process.env.DB_PASSWORD ?? '1234567',
   database: process.env.DB_NAME ?? 'home_work_14',
-  entities: [join(__dirname, 'Entities', '*.entity{.ts,.js}')],
+  entities: [Comment, Tag, Task, User],
   synchronize: true,
 };
