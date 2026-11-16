@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { ETaskStatus, EUserRole } from '../constants.js';
@@ -62,7 +62,12 @@ export class TaskService {
             this.tasksRepository.count({ where }),
         ]);
 
-        return { items, total, page, limit };
+        return {
+            items: items.map((t) => ({ ...t, author: t.author?.toPublic() })),
+            total,
+            page,
+            limit,
+        };
     }
 
     async createTask(
@@ -74,7 +79,7 @@ export class TaskService {
         });
 
         if (!author) {
-            throw new Error(`User id=${currentUserId} notFound`);
+            throw new NotFoundException(`User id=${currentUserId} not found`);
         }
 
         const tags = data.tags
@@ -89,7 +94,8 @@ export class TaskService {
             tags,
         });
 
-        return this.tasksRepository.save(task);
+        const saved = await this.tasksRepository.save(task);
+        return { ...saved, author: saved.author?.toPublic() };
     }
 
     async updateTask(
@@ -103,7 +109,7 @@ export class TaskService {
         });
 
         if (!task) {
-            throw new Error(`Task id=${id} notFound`);
+            throw new NotFoundException(`Task id=${id} not found`);
         }
 
         await this.assertCanManageTask(currentUserId, task);
@@ -125,7 +131,7 @@ export class TaskService {
         });
 
         if (!task) {
-            throw new Error(`Task id=${id} notFound`);
+            throw new NotFoundException(`Task id=${id} not found`);
         }
 
         await this.assertCanManageTask(currentUserId, task);
@@ -142,8 +148,8 @@ export class TaskService {
             return;
         }
 
-        if (task.author.id !== currentUserId) {
-            throw new Error(`User id=${currentUserId} can not manage task id=${task.id}`);
+        if (!current || task.author.id !== currentUserId) {
+            throw new ForbiddenException('Insufficient permissions');
         }
     }
 }

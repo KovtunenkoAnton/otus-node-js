@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ECommentStatus, EUserRole } from '../constants.js';
@@ -18,11 +18,13 @@ export class CommentService {
     ) { }
 
     getPublic() {
-        return this.commentsRepository.find({
-            where: {status: ECommentStatus.Visible },
-            relations: { author: true },
-            order: { id: 'ASC' },
-        });
+        return this.commentsRepository
+            .find({
+                where: {status: ECommentStatus.Visible },
+                relations: { author: true },
+                order: { id: 'ASC' },
+            })
+            .then((comments) => comments.map((c) => ({ ...c, author: c.author?.toPublic() })));
     }
 
     async createComment(currentUserId: number, taskId: number, content: string) {
@@ -31,7 +33,7 @@ export class CommentService {
         });
 
         if (!author) {
-            throw new Error(`User id=${currentUserId} notFound`);
+            throw new NotFoundException(`User id=${currentUserId} not found`);
         }
 
         const task = await this.tasksRepository.findOne({
@@ -39,7 +41,7 @@ export class CommentService {
         });
 
         if (!task) {
-            throw new Error(`Task id=${taskId} notFound`);
+            throw new NotFoundException(`Task id=${taskId} not found`);
         }
 
         const comment = this.commentsRepository.create({
@@ -49,14 +51,15 @@ export class CommentService {
             task,
         });
 
-        return this.commentsRepository.save(comment);
+        const saved = await this.commentsRepository.save(comment);
+        return { ...saved, author: saved.author?.toPublic() };
     }
 
     async updateComment(id: number, currentUserId: number, content: string) {
         const comment = await this.findCommentOrFail(id);
 
         if (comment.author.id !== currentUserId) {
-            throw new Error(`User id=${currentUserId} can not manage comment id=${id}`);
+            throw new ForbiddenException('Insufficient permissions');
         }
 
         await this.commentsRepository.update(id, { content });
@@ -66,7 +69,7 @@ export class CommentService {
         const comment = await this.findCommentOrFail(id);
 
         if (comment.author.id !== currentUserId) {
-            throw new Error(`User id=${currentUserId} can not manage comment id=${id}`);
+            throw new ForbiddenException('Insufficient permissions');
         }
 
         await this.commentsRepository.delete({ id });
@@ -79,7 +82,7 @@ export class CommentService {
         });
 
         if (!comment) {
-            throw new Error(`Comment id=${id} notFound`);
+            throw new NotFoundException(`Comment id=${id} not found`);
         }
 
         const current = await this.usersRepository.findOne({
@@ -90,7 +93,7 @@ export class CommentService {
         const isTaskAuthor = comment.task.author.id === currentUserId;
 
         if (!isAdmin && !isTaskAuthor) {
-            throw new Error(`User id=${currentUserId} can not manage comment id=${id}`);
+            throw new ForbiddenException('Insufficient permissions');
         }
 
         await this.commentsRepository.update(id, { status });
@@ -103,7 +106,7 @@ export class CommentService {
         });
 
         if (!comment) {
-            throw new Error(`Comment id=${id} notFound`);
+            throw new NotFoundException(`Comment id=${id} not found`);
         }
 
         return comment;

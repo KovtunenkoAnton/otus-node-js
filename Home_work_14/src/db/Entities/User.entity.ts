@@ -15,12 +15,21 @@ export class User {
     @Column({ length: 1024 })
     name: string;
 
-    @Column({ length: 1024 })
+    @Column({ length: 1024, unique: true })
     email: string;
+
+    @Column({ length: 1024 })
+    passwordHash: string;
 
     @Column()
     role: EUserRole;
 
     @Column()
     status: EUserStatus;
+
+    /** Копия пользователя без хэша пароля — безопасно отдавать в ответах API */
+    toPublic() {
+        const { passwordHash, ...rest } = this;
+        return rest;
+    }
 }
