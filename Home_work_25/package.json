@@ -1,0 +1,25 @@
+{
+  "name": "migrator-cli",
+  "version": "1.0.0",
+  "type": "module",
+  "bin": {
+    "migrate": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "umzug": "^3.8.3",
+    "sequelize": "^6.37.3",
+    "pg": "^8.13.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
